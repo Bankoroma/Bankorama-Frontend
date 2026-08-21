@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #1D9486;
+  --secondary: #E8F0F7;
+  --tertiary: #EBB154;
+  --neutral: #2D3748;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--neutral);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button, input { font: inherit; }
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .bg-grid {
+    background-image: linear-gradient(rgba(29,148,134,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(29,148,134,.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}

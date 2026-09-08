@@ -47,3 +47,15 @@ export async function uploadStatement(file: File) {
 
   return filename;
 }
+
+export type RegisterPayload = {
+  raison_sociale: string;
+  email: string;
+  password: string;
+  confirm_password: string;
+};
+
+export async function register(payload: RegisterPayload) {
+  const response = await api.post("/auth/register", payload);
+  return response.data;
+}

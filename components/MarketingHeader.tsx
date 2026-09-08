@@ -11,12 +11,21 @@ export function MarketingHeader() {
           <a href="#abonnements" className="hover:text-primary">Abonnements</a>
           <a href="#confiance" className="hover:text-primary">Pourquoi nous</a>
         </nav>
-        <Link
-          href="/login"
-          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
-        >
-          Connexion
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/register"
+            className="rounded-xl border border-primary px-5 py-2.5 text-sm font-semibold text-primary transition hover:bg-primary hover:text-white"
+          >
+            Inscription
+          </Link>
+
+          <Link
+            href="/login"
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
+          >
+            Connexion
+          </Link>
+        </div>
       </div>
     </header>
   );

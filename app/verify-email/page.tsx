@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("Vérification en cours...");
 
@@ -36,5 +36,13 @@ export default function VerifyEmailPage() {
     <main className="min-h-screen flex items-center justify-center">
       <h1 className="text-xl font-semibold">{message}</h1>
     </main>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div>Chargement...</div>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

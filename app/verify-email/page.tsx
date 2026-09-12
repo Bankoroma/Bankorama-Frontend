@@ -15,14 +15,20 @@ function VerifyEmailContent() {
       return;
     }
 
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:8000/api";
+
     fetch(
-      `http://localhost:8000/api/auth/verify-email?token=${encodeURIComponent(token)}`
+      `${apiUrl}/auth/verify-email?token=${encodeURIComponent(token)}`
     )
       .then(async (res) => {
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.detail || "Erreur de vérification.");
+          throw new Error(
+            data.detail || "Erreur de vérification."
+          );
         }
 
         setMessage(data.message);

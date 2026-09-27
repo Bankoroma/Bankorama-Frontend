@@ -45,7 +45,11 @@ export async function uploadStatement(file: File) {
   link.remove();
   window.URL.revokeObjectURL(url);
 
-  return filename;
+  return {
+  filename,
+  creditsConsumed: Number(response.headers["x-credits-consumed"] || 0),
+  pagesProcessed: Number(response.headers["x-pages-processed"] || 0),
+};
 }
 
 export type RegisterPayload = {
@@ -57,5 +61,17 @@ export type RegisterPayload = {
 
 export async function register(payload: RegisterPayload) {
   const response = await api.post("/auth/register", payload);
+  return response.data;
+}
+
+export type CurrentUser = {
+  id: number;
+  raison_sociale: string;
+  email: string;
+  credits: number;
+};
+
+export async function getMe() {
+  const response = await api.get<CurrentUser>("/auth/me");
   return response.data;
 }

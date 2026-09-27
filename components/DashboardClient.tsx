@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FileSpreadsheet, FileText, LayoutDashboard, LogOut, Menu, Plus, RefreshCw, UserCircle, X, Download } from "lucide-react";
 import { UploadBox } from "./UploadBox";
 import type { Conversion } from "@/lib/types";
+import { getMe } from "@/lib/api";
 
 const initialConversions: Conversion[] = [
   { id: "1", filename: "Factures_Janvier.xlsx", date: "12 Fév", type: "Grand Livre", status: "Terminé" },
@@ -18,6 +19,7 @@ export default function DashboardClient() {
   const [showUpload, setShowUpload] = useState(false);
   const [user, setUser] = useState({ name: "Admin", email: "" });
   const [conversions, setConversions] = useState(initialConversions);
+  const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("ledger_token");
@@ -25,6 +27,16 @@ export default function DashboardClient() {
     const raw = localStorage.getItem("ledger_user");
     if (raw) setUser(JSON.parse(raw));
   }, [router]);
+
+  useEffect(() => {
+  getMe()
+    .then((data) => {
+      setCredits(data.credits);
+    })
+    .catch((error) => {
+      console.error("Erreur récupération utilisateur :", error);
+    });
+  }, []);
 
   const completed = useMemo(() => conversions.filter(c => c.status === "Terminé").length, [conversions]);
 
@@ -98,7 +110,12 @@ export default function DashboardClient() {
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-500">Solde de conversion</p>
-                  <p className="mt-2 text-3xl font-extrabold text-slate-950">150 <span className="text-base font-semibold text-slate-400">crédits restants</span></p>
+                  <p className="mt-2 text-3xl font-extrabold text-slate-950">
+  {credits ?? "..."}{" "}
+  <span className="text-base font-semibold text-slate-400">
+    crédits restants
+  </span>
+</p>
                 </div>
                 <span className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-bold text-primary">150 / 500</span>
               </div>

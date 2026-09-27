@@ -4,7 +4,11 @@ import { ChangeEvent, DragEvent, useRef, useState } from "react";
 import { FileUp, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { uploadStatement } from "@/lib/api";
 
-export function UploadBox({ onUploaded }: { onUploaded?: () => void }) {
+export function UploadBox({
+  onUploaded,
+}: {
+  onUploaded?: (creditsConsumed: number) => void;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,9 +28,12 @@ export function UploadBox({ onUploaded }: { onUploaded?: () => void }) {
     setLoading(true);
     setMessage("");
     try {
-      await uploadStatement(file);
-      setMessage("Conversion lancée avec succès.");
-      onUploaded?.();
+      const result = await uploadStatement(file);
+
+    setMessage(
+      `Conversion réussie : ${result.pagesProcessed} page(s), ${result.creditsConsumed} crédit(s) consommé(s).`
+    );
+      onUploaded?.(result.creditsConsumed);
     } catch {
       setMessage("Impossible de contacter l'API. Vérifiez votre backend.");
     } finally {

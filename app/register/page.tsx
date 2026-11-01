@@ -1,14 +1,25 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Building2, Lock, Mail } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { register } from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { apiErrorMessage, register } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { PlanSelector } from "@/components/Plans";
 
 export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [planCode, setPlanCode] = useState(searchParams.get("plan") || "");
   const [raisonSociale, setRaisonSociale] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,6 +31,12 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!planCode) {
+      setError("Choisissez une formule d'abonnement.");
+      setLoading(false);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Les mots de passe ne correspondent pas.");
@@ -33,16 +50,13 @@ export default function RegisterPage() {
         email,
         password,
         confirm_password: confirmPassword,
+        plan_code: planCode,
       });
 
       router.push("/register-success");
-    } catch (error: any) {
-    const message =
-    error.response?.data?.detail ||
-    "Impossible de créer le compte. Veuillez réessayer.";
-
-    setError(message);
-} finally {
+    } catch (error) {
+      setError(await apiErrorMessage(error, "Impossible de créer le compte. Veuillez réessayer."));
+    } finally {
       setLoading(false);
     }
   }
@@ -66,8 +80,8 @@ export default function RegisterPage() {
               </h1>
 
               <p className="mt-5 leading-7 text-white/80">
-                Créez votre compte et commencez à convertir vos relevés
-                bancaires rapidement et simplement.
+                Choisissez votre formule, créez votre compte et convertissez
+                vos relevés dès l&apos;activation de votre abonnement.
               </p>
             </div>
           </div>
@@ -95,6 +109,19 @@ export default function RegisterPage() {
               </p>
 
               <form onSubmit={submit} className="mt-7 space-y-4">
+
+                <div>
+                  <span className="text-sm font-semibold">
+                    Formule d&apos;abonnement
+                  </span>
+                  <div className="mt-2">
+                    <PlanSelector value={planCode} onChange={setPlanCode} />
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Votre compte est accessible immédiatement. Les conversions sont disponibles
+                    dès l&apos;activation de votre abonnement par notre équipe.
+                  </p>
+                </div>
 
                 <label className="block">
                   <span className="text-sm font-semibold">

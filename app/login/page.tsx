@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Lock, Mail } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { login } from "@/lib/api";
+import { apiErrorMessage, login } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,10 +21,10 @@ export default function LoginPage() {
     try {
       const data = await login({ email, password });
       localStorage.setItem("ledger_token", data.access_token);
-      localStorage.setItem("ledger_user", JSON.stringify(data.user || { name: "Admin", email }));
+      localStorage.removeItem("ledger_user");
       router.push("/dashboard");
-    } catch {
-      setError("Identifiants incorrects ou API indisponible.");
+    } catch (error) {
+      setError(await apiErrorMessage(error, "Identifiants incorrects."));
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,10 @@ export default function LoginPage() {
                   {loading ? "Connexion..." : "Se connecter"}
                 </button>
               </form>
-              <p className="mt-6 text-center text-xs text-slate-400">Le bouton de connexion est prêt à être relié à votre API via Axios.</p>
+              <p className="mt-6 text-center text-sm text-slate-500">
+                Pas encore de compte ?{" "}
+                <Link href="/register" className="font-bold text-primary hover:underline">Créer un compte</Link>
+              </p>
             </div>
           </div>
         </div>

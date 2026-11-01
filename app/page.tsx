@@ -2,13 +2,8 @@ import Link from "next/link";
 import { ArrowRight, Check, FileSpreadsheet, LockKeyhole, ShieldCheck, Zap } from "lucide-react";
 import { MarketingHeader } from "@/components/MarketingHeader";
 import { Footer } from "@/components/Footer";
+import { PlansGrid } from "@/components/Plans";
 
-const plans = [
-  { name: "Starter", price: "300", old: "250", credits: "30 relevés / an", note: "Engagement 1 an renouvelable", icon: FileSpreadsheet },
-  { name: "Standard", price: "600", old: "500", credits: "70 relevés / an", note: "Engagement 1 an renouvelable", popular: true, icon: Zap },
-  { name: "Illimité", price: "1 800", old: "1 500", credits: "Relevés illimités", note: "Engagement 1 an renouvelable", icon: Zap },
-  { name: "Sans engagement", price: "50", old: "", credits: "1 relevé = 1 crédit", note: "Aucun engagement", icon: FileSpreadsheet, suffix: "/ relevé" },
-];
 
 export default function Home() {
   return (
@@ -31,7 +26,7 @@ export default function Home() {
                 structurés, prêts à être utilisés dans vos logiciels de comptabilité.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
-                <Link href="/login" className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-white shadow-lg shadow-primary/20 hover:bg-teal-700">
+                <Link href="/register" className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-white shadow-lg shadow-primary/20 hover:bg-teal-700">
                   Commencer maintenant <ArrowRight size={18} />
                 </Link>
                 <a href="#fonctionnement" className="rounded-xl border border-slate-300 bg-white px-6 py-3.5 font-semibold text-slate-700 hover:border-primary">
@@ -101,29 +96,7 @@ export default function Home() {
               <h2 className="mt-3 text-4xl font-extrabold text-slate-950">Choisissez la formule qui vous correspond</h2>
               <p className="mt-4 text-slate-600">Des tarifs simples et transparents, adaptés à votre volume de relevés.</p>
             </div>
-            <div className="mt-12 grid gap-5 lg:grid-cols-4">
-              {plans.map((plan) => {
-                const Icon = plan.icon;
-                return (
-                  <div key={plan.name} className={`relative rounded-2xl border p-6 shadow-sm ${plan.popular ? "border-primary bg-primary text-white shadow-lg shadow-primary/20" : "border-slate-200 bg-white"}`}>
-                    {plan.popular && <div className="absolute -top-5 left-0 right-0 rounded-t-xl bg-tertiary py-1.5 text-center text-xs font-extrabold uppercase text-slate-900">Le plus choisi</div>}
-                    <div className={`mx-auto grid h-11 w-11 place-items-center rounded-full ${plan.popular ? "bg-white text-primary" : "bg-primary text-white"}`}><Icon size={20} /></div>
-                    <h3 className="mt-4 text-center font-bold">{plan.name}</h3>
-                    <div className="mt-4 text-center">
-                      <span className="text-2xl font-extrabold">{plan.price} DH TTC</span>
-                      {plan.suffix && <span className="text-sm"> {plan.suffix}</span>}
-                      {plan.old && <p className={`mt-1 text-xs line-through ${plan.popular ? "text-white/60" : "text-slate-400"}`}>{plan.old} DH HT</p>}
-                    </div>
-                    <div className={`my-5 border-t ${plan.popular ? "border-white/25" : "border-slate-200"}`} />
-                    <p className="text-center text-sm font-semibold">{plan.credits}</p>
-                    <p className={`mt-7 text-center text-xs ${plan.popular ? "text-white/75" : "text-slate-500"}`}>{plan.note}</p>
-                    <Link href="/login" className={`mt-7 block rounded-xl py-3 text-center text-sm font-bold ${plan.popular ? "bg-white text-primary" : "bg-primary text-white"}`}>
-                      Choisir
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
+            <PlansGrid />
           </div>
         </section>
 

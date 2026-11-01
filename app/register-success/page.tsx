@@ -19,18 +19,17 @@ export default function RegisterSuccessPage() {
           </h1>
 
           <p className="mt-4 leading-7 text-slate-600">
-            Votre compte a bien été créé.
+            Votre compte a bien été créé : vous pouvez vous connecter dès maintenant.
             <br />
-            Avant de pouvoir vous connecter, vous devez vérifier votre adresse email.
-            <br />
-            Consultez votre boîte mail et cliquez sur le lien de vérification envoyé.
+            Les conversions seront disponibles dès que notre équipe aura activé votre
+            abonnement. Vous recevrez un email de confirmation.
           </p>
 
           <Link
             href="/login"
             className="mt-8 inline-block w-full rounded-xl bg-primary px-6 py-3.5 font-bold text-white transition hover:bg-teal-700"
           >
-            J’ai vérifié mon email
+            Se connecter
           </Link>
 
         </div>

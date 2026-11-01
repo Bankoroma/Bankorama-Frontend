@@ -31,7 +31,7 @@ api.interceptors.response.use(
 // Message lisible depuis une erreur API (y compris réponse blob du téléchargement)
 export async function apiErrorMessage(error: unknown, fallback: string) {
   if (!axios.isAxiosError(error)) return fallback;
-  if (!error.response) return "Impossible de contacter l'API. Vérifiez votre connexion.";
+  if (!error.response) return "Impossible de joindre le serveur. Vérifiez votre connexion puis réessayez.";
 
   let data: unknown = error.response.data;
   if (data instanceof Blob) {
@@ -208,7 +208,7 @@ export function formatDate(value: string | null, withTime = false) {
 }
 
 export const STATUS_LABELS: Record<SubscriptionStatus, string> = {
-  pending: "En attente d'activation",
+  pending: "En attente d’activation",
   active: "Actif",
   suspended: "Suspendu",
 };

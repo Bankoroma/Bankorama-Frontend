@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import AdminClient from "@/components/AdminClient";
 
 export default function AdminPage() {
-  return <AdminClient />;
+  return (
+    <Suspense>
+      <AdminClient />
+    </Suspense>
+  );
 }

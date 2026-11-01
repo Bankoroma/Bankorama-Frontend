@@ -2,17 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Crown, FileSpreadsheet, Zap } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { formatPrice, getPlans, type Plan } from "@/lib/api";
 
-const ICONS: Record<string, typeof Zap> = {
-  starter: FileSpreadsheet,
-  standard: Zap,
-  ultime: Crown,
-};
-
-// Formule mise en avant sur la page d'accueil
+// Formule mise en avant
 const POPULAR = "standard";
+
+const PERKS: Record<string, string[]> = {
+  starter: ["Idéal pour une TPE", "Export Excel avec totaux", "Historique des conversions"],
+  standard: ["Pour les PME actives", "Export Excel avec totaux", "Historique des conversions"],
+  ultime: ["Cabinets & gros volumes", "Export Excel avec totaux", "Historique des conversions"],
+};
 
 export function usePlans() {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -35,46 +35,56 @@ export function PlanSelector({ value, onChange }: { value: string; onChange: (co
   }, [plans, value, onChange]);
 
   if (error) {
-    return <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">Impossible de charger les formules.</p>;
+    return <p role="alert" className="rounded-2xl bg-danger/5 p-3 text-sm text-danger">Impossible de charger les formules. Rechargez la page.</p>;
   }
 
   if (loading) {
     return (
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[0, 1, 2].map((i) => <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100" />)}
+      <div className="grid gap-2 sm:grid-cols-3" aria-busy="true" aria-label="Chargement des formules…">
+        {[0, 1, 2].map((i) => <div key={i} className="h-[104px] animate-pulse rounded-2xl bg-pill" />)}
       </div>
     );
   }
 
   return (
-    <div role="radiogroup" aria-label="Formule d'abonnement" className="grid gap-3 sm:grid-cols-3">
-      {plans.map((plan) => {
-        const selected = plan.code === value;
-        return (
-          <button
-            key={plan.code}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(plan.code)}
-            className={`relative rounded-xl border-2 p-3 text-left transition ${
-              selected ? "border-primary bg-primary/5" : "border-slate-200 hover:border-primary/50"
-            }`}
-          >
-            {selected && (
-              <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-primary text-white">
-                <Check size={13} />
+    <fieldset>
+      <legend className="sr-only">Formule d’abonnement</legend>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {plans.map((plan) => {
+          const selected = plan.code === value;
+          return (
+            <label
+              key={plan.code}
+              className={`relative cursor-pointer rounded-2xl border p-3.5 transition-[border-color,background-color,box-shadow] duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary ${
+                selected ? "border-primary bg-primary-soft shadow-[inset_0_0_0_1px_#0F766E]" : "border-line bg-white hover:border-subtle"
+              }`}
+            >
+              <input
+                type="radio"
+                name="plan"
+                value={plan.code}
+                checked={selected}
+                onChange={() => onChange(plan.code)}
+                className="sr-only"
+              />
+              <span
+                aria-hidden="true"
+                className={`absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border transition-colors ${
+                  selected ? "border-primary bg-primary text-white" : "border-line bg-white"
+                }`}
+              >
+                {selected && <Check size={12} strokeWidth={3} />}
               </span>
-            )}
-            <p className="text-sm font-bold text-slate-900">{plan.name}</p>
-            <p className="mt-1 text-lg font-extrabold text-primary">
-              {formatPrice(plan.price_ttc)} <span className="text-xs font-semibold">DH TTC</span>
-            </p>
-            <p className="mt-1 text-xs text-slate-500">{plan.monthly_credits} crédits / mois</p>
-          </button>
-        );
-      })}
-    </div>
+              <span className="block text-sm font-semibold">{plan.name}</span>
+              <span className="mt-2 block font-display text-xl font-bold tracking-tight tabular">
+                {formatPrice(plan.price_ttc)}<span className="text-xs font-semibold text-muted">&nbsp;DH&nbsp;TTC</span>
+              </span>
+              <span className="mt-0.5 block text-xs text-muted tabular">{plan.monthly_credits} crédits / mois</span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 
@@ -82,35 +92,55 @@ export function PlansGrid() {
   const { plans, error, loading } = usePlans();
 
   if (error) {
-    return <p className="mt-12 text-center text-sm text-slate-500">Les formules sont momentanément indisponibles.</p>;
+    return <p className="bento mt-10 p-8 text-center text-muted">Les formules sont momentanément indisponibles. Réessayez dans quelques instants.</p>;
   }
 
   if (loading) {
     return (
-      <div className="mt-12 grid gap-5 lg:grid-cols-3">
-        {[0, 1, 2].map((i) => <div key={i} className="h-80 animate-pulse rounded-2xl bg-white" />)}
+      <div className="mt-10 grid gap-2.5 lg:grid-cols-3" aria-busy="true" aria-label="Chargement des formules…">
+        {[0, 1, 2].map((i) => <div key={i} className="h-[420px] animate-pulse rounded-bento bg-white" />)}
       </div>
     );
   }
 
   return (
-    <div className="mx-auto mt-12 grid max-w-5xl gap-5 lg:grid-cols-3">
+    <div className="mt-10 grid gap-2.5 lg:grid-cols-3">
       {plans.map((plan) => {
-        const Icon = ICONS[plan.code] || FileSpreadsheet;
         const popular = plan.code === POPULAR;
+        const pricePerCredit = Number(plan.price_ttc) / plan.monthly_credits;
         return (
-          <div key={plan.code} className={`relative rounded-2xl border p-6 shadow-sm ${popular ? "border-primary bg-primary text-white shadow-lg shadow-primary/20" : "border-slate-200 bg-white"}`}>
-            {popular && <div className="absolute -top-5 left-0 right-0 rounded-t-xl bg-tertiary py-1.5 text-center text-xs font-extrabold uppercase text-slate-900">Le plus choisi</div>}
-            <div className={`mx-auto grid h-11 w-11 place-items-center rounded-full ${popular ? "bg-white text-primary" : "bg-primary text-white"}`}><Icon size={20} /></div>
-            <h3 className="mt-4 text-center font-bold">{plan.name}</h3>
-            <div className="mt-4 text-center">
-              <span className="text-2xl font-extrabold">{formatPrice(plan.price_ttc)} DH TTC</span>
+          <div key={plan.code} className={`${popular ? "bento-dark" : "bento"} flex flex-col p-7`}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">{plan.name}</h3>
+              {popular && <span className="rounded-full bg-mint/15 px-3 py-1 text-xs font-semibold text-mint">Le plus choisi</span>}
             </div>
-            <div className={`my-5 border-t ${popular ? "border-white/25" : "border-slate-200"}`} />
-            <p className="text-center text-sm font-semibold">{plan.monthly_credits} crédits / mois</p>
-            <p className={`mt-2 text-center text-xs ${popular ? "text-white/75" : "text-slate-500"}`}>1 crédit = 1 page de relevé</p>
-            <Link href={`/register?plan=${plan.code}`} className={`mt-7 block rounded-xl py-3 text-center text-sm font-bold ${popular ? "bg-white text-primary" : "bg-primary text-white"}`}>
-              Choisir
+
+            <p className="mt-8 flex items-baseline gap-1.5">
+              <span className="num text-6xl">{formatPrice(plan.price_ttc)}</span>
+              <span className={`text-sm font-semibold ${popular ? "text-white/60" : "text-muted"}`}>DH&nbsp;TTC / mois</span>
+            </p>
+
+            <div className={`mt-6 rounded-2xl p-4 ${popular ? "bg-white/[0.07]" : "bg-mist"}`}>
+              <p className="num text-3xl">{plan.monthly_credits}</p>
+              <p className={`mt-1 text-sm ${popular ? "text-white/65" : "text-muted"}`}>
+                crédits par mois · soit {formatPrice(pricePerCredit)}&nbsp;DH la page
+              </p>
+            </div>
+
+            <ul className={`mt-6 flex-1 space-y-3 text-sm ${popular ? "text-white/80" : "text-ink"}`}>
+              {(PERKS[plan.code] ?? []).map((perk) => (
+                <li key={perk} className="flex items-center gap-2.5">
+                  <Check size={16} aria-hidden="true" className={popular ? "text-mint" : "text-primary"} /> {perk}
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href={`/register?plan=${plan.code}`}
+              className={`${popular ? "btn-light" : "btn-dark"} mt-8 h-12 w-full`}
+              aria-label={`Choisir la formule ${plan.name}`}
+            >
+              Choisir {plan.name} <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
         );

@@ -2,34 +2,42 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Loader2, PauseCircle, RefreshCw, Search, ShieldCheck } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle2, Clock3, Loader2, PauseCircle, RefreshCw, Search, Users, XCircle } from "lucide-react";
+import { AppShell } from "./AppShell";
 import {
   adminActivate, adminListUsers, adminSuspend, apiErrorMessage, formatDate, formatPrice, getMe, getPlans,
-  STATUS_LABELS, type AdminUser, type Plan, type SubscriptionStatus,
+  STATUS_LABELS, type AdminUser, type CurrentUser, type Plan, type SubscriptionStatus,
 } from "@/lib/api";
 
-const FILTERS: [SubscriptionStatus | "all", string][] = [
-  ["pending", "En attente"],
-  ["active", "Actifs"],
-  ["suspended", "Suspendus"],
-  ["all", "Tous"],
+type Filter = SubscriptionStatus | "all";
+
+const FILTERS: { key: Filter; label: string; icon: typeof Users; accent: string }[] = [
+  { key: "pending", label: "En attente", icon: Clock3, accent: "text-amber" },
+  { key: "active", label: "Actifs", icon: CheckCircle2, accent: "text-primary" },
+  { key: "suspended", label: "Suspendus", icon: XCircle, accent: "text-danger" },
+  { key: "all", label: "Tous", icon: Users, accent: "text-ink" },
 ];
 
 const BADGE: Record<SubscriptionStatus, string> = {
-  pending: "bg-amber-50 text-amber-700",
-  active: "bg-emerald-50 text-emerald-600",
-  suspended: "bg-red-50 text-red-600",
+  pending: "bg-amber-50 text-amber",
+  active: "bg-primary-soft text-primary",
+  suspended: "bg-danger/10 text-danger",
 };
 
 export default function AdminClient() {
   const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("status") as Filter | null;
+  const filter: Filter = requested && FILTERS.some((f) => f.key === requested) ? requested : "pending";
+
+  const [me, setMe] = useState<CurrentUser | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [filter, setFilter] = useState<SubscriptionStatus | "all">("pending");
   const [search, setSearch] = useState("");
   const [selectedPlans, setSelectedPlans] = useState<Record<number, string>>({});
+  const [confirmSuspend, setConfirmSuspend] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
@@ -39,7 +47,7 @@ export default function AdminClient() {
     try {
       setUsers(await adminListUsers());
     } catch (error) {
-      setFeedback({ ok: false, text: await apiErrorMessage(error, "Impossible de charger les comptes.") });
+      setFeedback({ ok: false, text: await apiErrorMessage(error, "Impossible de charger les comptes. Actualisez la page.") });
     } finally {
       setLoading(false);
     }
@@ -52,12 +60,12 @@ export default function AdminClient() {
       return;
     }
     getMe()
-      .then((me) => {
-        if (me.role !== "admin") {
+      .then((user) => {
+        if (user.role !== "admin") {
           router.replace("/dashboard");
           return;
         }
-        setAuthorized(true);
+        setMe(user);
         void load();
         getPlans().then(setPlans).catch(() => undefined);
       })
@@ -65,7 +73,7 @@ export default function AdminClient() {
   }, [router, load]);
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: users.length, pending: 0, active: 0, suspended: 0 };
+    const c: Record<Filter, number> = { all: users.length, pending: 0, active: 0, suspended: 0 };
     users.forEach((u) => { c[u.subscription_status] += 1; });
     return c;
   }, [users]);
@@ -89,9 +97,9 @@ export default function AdminClient() {
     try {
       const updated = await adminActivate(user.id, planCode);
       replaceUser(updated);
-      setFeedback({ ok: true, text: `Abonnement ${updated.plan?.name} activé pour ${updated.raison_sociale} (${updated.credits} crédits).` });
+      setFeedback({ ok: true, text: `Formule ${updated.plan?.name} activée pour ${updated.raison_sociale} : ${updated.credits} crédits disponibles.` });
     } catch (error) {
-      setFeedback({ ok: false, text: await apiErrorMessage(error, "Activation impossible.") });
+      setFeedback({ ok: false, text: await apiErrorMessage(error, "Activation impossible. Réessayez.") });
     } finally {
       setBusyId(null);
     }
@@ -99,158 +107,162 @@ export default function AdminClient() {
 
   async function suspend(user: AdminUser) {
     setBusyId(user.id);
+    setConfirmSuspend(null);
     setFeedback(null);
     try {
       const updated = await adminSuspend(user.id);
       replaceUser(updated);
-      setFeedback({ ok: true, text: `Abonnement de ${updated.raison_sociale} suspendu.` });
+      setFeedback({ ok: true, text: `Abonnement de ${updated.raison_sociale} suspendu. Vous pouvez le réactiver à tout moment.` });
     } catch (error) {
-      setFeedback({ ok: false, text: await apiErrorMessage(error, "Suspension impossible.") });
+      setFeedback({ ok: false, text: await apiErrorMessage(error, "Suspension impossible. Réessayez.") });
     } finally {
       setBusyId(null);
     }
   }
 
-  if (!authorized) {
-    return <div className="grid min-h-screen place-items-center text-primary"><Loader2 className="animate-spin" size={32} /></div>;
+  if (!me) {
+    return <div className="grid min-h-dvh place-items-center text-primary" aria-label="Chargement…"><Loader2 className="animate-spin" size={32} aria-hidden="true" /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-secondary/45 text-neutral">
-      <header className="flex h-20 items-center justify-between border-b border-slate-200 bg-white px-5 lg:px-8">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary">
-            <ArrowLeft size={16}/> Tableau de bord
-          </Link>
-          <span className="hidden text-slate-300 sm:inline">|</span>
-          <p className="hidden items-center gap-2 font-extrabold sm:flex"><ShieldCheck size={18} className="text-primary"/> Administration</p>
+    <AppShell user={me} active="admin">
+      <div className="bento mb-2.5 flex flex-col justify-between gap-5 p-6 sm:flex-row sm:items-center md:p-8">
+        <div>
+          <p className="eyebrow">Administration</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tightest md:text-4xl">Abonnements</h1>
+          <p className="mt-1 text-muted">Les nouveaux comptes se connectent tout de suite et convertissent après votre activation.</p>
         </div>
-        <button onClick={() => void load()} className="inline-flex items-center gap-2 text-xs font-bold text-primary">
-          <RefreshCw size={15} className={loading ? "animate-spin" : ""}/> Actualiser
+        <button type="button" onClick={() => void load()} disabled={loading} className="btn-ghost shrink-0">
+          <RefreshCw size={16} aria-hidden="true" className={loading ? "animate-spin" : ""} /> Actualiser
         </button>
-      </header>
+      </div>
 
-      <main className="mx-auto max-w-7xl p-5 lg:p-8">
-        <h1 className="text-3xl font-extrabold text-slate-950">Gestion des abonnements</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Les nouveaux comptes peuvent se connecter mais ne convertissent qu&apos;après votre activation.
-        </p>
-
-        <div className="mt-7 grid gap-4 sm:grid-cols-4">
-          {FILTERS.map(([key, label]) => (
-            <button
+      <nav aria-label="Filtrer par statut" className="mb-2.5 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        {FILTERS.map(({ key, label, icon: Icon, accent }) => {
+          const current = filter === key;
+          return (
+            <Link
               key={key}
-              onClick={() => setFilter(key)}
-              className={`rounded-2xl border p-4 text-left shadow-sm transition ${
-                filter === key ? "border-primary bg-primary text-white" : "border-slate-200 bg-white hover:border-primary/50"
+              href={`${pathname}?status=${key}`}
+              scroll={false}
+              aria-current={current ? "page" : undefined}
+              className={`flex flex-col justify-between gap-5 rounded-bento p-5 transition-[background-color,box-shadow] duration-200 ${
+                current ? "bg-ink text-white" : "bg-white shadow-bento hover:shadow-lift"
               }`}
             >
-              <p className={`text-sm ${filter === key ? "text-white/80" : "text-slate-500"}`}>{label}</p>
-              <p className="mt-1 text-2xl font-extrabold">{counts[key]}</p>
-            </button>
-          ))}
-        </div>
+              <Icon size={20} aria-hidden="true" className={current ? "text-mint" : accent} />
+              <div>
+                <p className="num text-4xl">{counts[key]}</p>
+                <p className={`mt-1 text-sm font-medium ${current ? "text-white/70" : "text-muted"}`}>{label}</p>
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
 
-        {feedback && (
-          <p className={`mt-6 rounded-xl p-3 text-sm ${feedback.ok ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
-            {feedback.text}
-          </p>
-        )}
+      {feedback && (
+        <p role={feedback.ok ? "status" : "alert"} className={`bento mb-2.5 px-5 py-4 text-sm font-medium ${feedback.ok ? "text-primary" : "text-danger"}`}>
+          {feedback.text}
+        </p>
+      )}
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center gap-3 border-b border-slate-100 p-4">
-            <Search size={18} className="text-slate-400"/>
+      <section className="bento" aria-labelledby="comptes-titre">
+        <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <h2 id="comptes-titre" className="text-lg font-bold">
+            {FILTERS.find((f) => f.key === filter)?.label} <span className="text-muted tabular">· {visible.length}</span>
+          </h2>
+          <div className="field mt-0 sm:w-80">
+            <Search size={17} aria-hidden="true" className="shrink-0 text-subtle" />
+            <label htmlFor="recherche" className="sr-only">Rechercher un compte</label>
             <input
+              id="recherche"
+              type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher par email ou raison sociale"
-              className="w-full border-0 bg-transparent text-sm outline-none"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Email ou raison sociale…"
             />
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-400">
-                <tr>
-                  <th className="px-5 py-3">Client</th>
-                  <th className="px-5 py-3">Inscription</th>
-                  <th className="px-5 py-3">Formule</th>
-                  <th className="px-5 py-3">Statut</th>
-                  <th className="px-5 py-3">Crédits</th>
-                  <th className="px-5 py-3">Conversions</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {visible.length === 0 && (
-                  <tr><td colSpan={7} className="p-8 text-center text-slate-400">{loading ? "Chargement…" : "Aucun compte."}</td></tr>
-                )}
-                {visible.map((u) => {
-                  const busy = busyId === u.id;
-                  return (
-                    <tr key={u.id}>
-                      <td className="px-5 py-4">
-                        <p className="font-semibold text-slate-900">
-                          {u.raison_sociale}
-                          {u.role === "admin" && <span className="ml-2 rounded bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Admin</span>}
-                        </p>
-                        <p className="text-xs text-slate-400">{u.email}</p>
-                      </td>
-                      <td className="px-5 py-4 text-slate-500">{formatDate(u.created_at)}</td>
-                      <td className="px-5 py-4">
-                        {u.role === "admin" ? "—" : (
-                          <select
-                            value={selectedPlans[u.id] ?? u.plan?.code ?? ""}
-                            onChange={(e) => setSelectedPlans((s) => ({ ...s, [u.id]: e.target.value }))}
-                            className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-primary"
-                          >
-                            {!u.plan && <option value="">Choisir…</option>}
-                            {plans.map((p) => (
-                              <option key={p.code} value={p.code}>
-                                {p.name} · {formatPrice(p.price_ttc)} DH · {p.monthly_credits} cr.
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${BADGE[u.subscription_status]}`}>
-                          {STATUS_LABELS[u.subscription_status]}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 font-semibold">{u.credits}{u.plan ? <span className="font-normal text-slate-400"> / {u.plan.monthly_credits}</span> : null}</td>
-                      <td className="px-5 py-4">{u.conversions_count}</td>
-                      <td className="px-5 py-4">
-                        {u.role !== "admin" && (
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => void activate(u)}
-                              disabled={busy}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-teal-700 disabled:opacity-50"
-                            >
-                              {busy ? <Loader2 size={14} className="animate-spin"/> : <CheckCircle2 size={14}/>}
-                              {u.subscription_status === "active" ? "Appliquer / recharger" : "Activer"}
-                            </button>
-                            {u.subscription_status !== "suspended" && (
-                              <button
-                                onClick={() => void suspend(u)}
-                                disabled={busy}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 hover:border-red-300 hover:text-red-600 disabled:opacity-50"
-                              >
-                                <PauseCircle size={14}/> Suspendre
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         </div>
-      </main>
-    </div>
+
+        {visible.length === 0 ? (
+          <p className="px-5 pb-12 pt-6 text-center text-muted">{loading ? "Chargement des comptes…" : "Aucun compte dans cette catégorie."}</p>
+        ) : (
+          <ul className="divide-y divide-line px-2 pb-2">
+            {visible.map((u) => {
+              const busy = busyId === u.id;
+              const isAdmin = u.role === "admin";
+              return (
+                <li key={u.id} className="grid gap-4 rounded-2xl px-3 py-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1.3fr)_auto] lg:items-center">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-pill font-display text-sm font-bold">
+                      {u.raison_sociale.slice(0, 1).toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 font-semibold">
+                        <span className="truncate">{u.raison_sociale}</span>
+                        {isAdmin && <span className="shrink-0 rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Admin</span>}
+                      </p>
+                      <p className="truncate text-xs text-muted" title={u.email}>{u.email}</p>
+                      <p className="text-xs text-subtle">Inscrit le {formatDate(u.created_at)}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${BADGE[u.subscription_status]}`}>{STATUS_LABELS[u.subscription_status]}</span>
+                    <span className="rounded-full bg-pill px-3 py-1 text-xs font-medium text-muted tabular">
+                      {u.credits}{u.plan ? ` / ${u.plan.monthly_credits}` : ""} crédits
+                    </span>
+                    <span className="rounded-full bg-pill px-3 py-1 text-xs font-medium text-muted tabular">{u.conversions_count} conversion(s)</span>
+                  </div>
+
+                  {!isAdmin && (
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                      <label htmlFor={`plan-${u.id}`} className="sr-only">Formule de {u.raison_sociale}</label>
+                      <select
+                        id={`plan-${u.id}`}
+                        value={selectedPlans[u.id] ?? u.plan?.code ?? ""}
+                        onChange={(e) => setSelectedPlans((s) => ({ ...s, [u.id]: e.target.value }))}
+                        className="min-h-11 rounded-full border border-line bg-white px-4 text-sm text-ink"
+                      >
+                        {!u.plan && <option value="">Choisir une formule…</option>}
+                        {plans.map((p) => (
+                          <option key={p.code} value={p.code}>
+                            {p.name} · {formatPrice(p.price_ttc)} DH · {p.monthly_credits} cr.
+                          </option>
+                        ))}
+                      </select>
+
+                      <button type="button" onClick={() => void activate(u)} disabled={busy} className="btn-primary">
+                        {busy ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : <CheckCircle2 size={15} aria-hidden="true" />}
+                        {u.subscription_status === "active" ? "Appliquer & recharger" : "Activer"}
+                      </button>
+
+                      {u.subscription_status !== "suspended" && (
+                        confirmSuspend === u.id ? (
+                          <span className="flex items-center gap-1 rounded-full bg-danger/5 p-1">
+                            <button type="button" onClick={() => void suspend(u)} disabled={busy} className="btn min-h-9 bg-danger px-4 text-white hover:bg-danger/90">
+                              Confirmer
+                            </button>
+                            <button type="button" onClick={() => setConfirmSuspend(null)} className="btn min-h-9 px-3 text-muted hover:bg-white">
+                              Annuler
+                            </button>
+                          </span>
+                        ) : (
+                          <button type="button" onClick={() => setConfirmSuspend(u.id)} disabled={busy} className="btn-ghost hover:text-danger">
+                            <PauseCircle size={15} aria-hidden="true" /> Suspendre
+                          </button>
+                        )
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+    </AppShell>
   );
 }

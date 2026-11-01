@@ -1,12 +1,20 @@
 "use client";
 
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Building2, Lock, Mail } from "lucide-react";
-import { Logo } from "@/components/Logo";
-import { apiErrorMessage, register } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Building2, Check, Eye, EyeOff, Loader2, Lock, Mail, X } from "lucide-react";
+import { AuthShell, FormError } from "@/components/AuthShell";
 import { PlanSelector } from "@/components/Plans";
+import { apiErrorMessage, register } from "@/lib/api";
+
+const RULES: [string, (p: string) => boolean][] = [
+  ["8 caractères minimum", (p) => p.length >= 8],
+  ["Une majuscule", (p) => /[A-Z]/.test(p)],
+  ["Une minuscule", (p) => /[a-z]/.test(p)],
+  ["Un chiffre", (p) => /[0-9]/.test(p)],
+  ["Un caractère spécial", (p) => /[^A-Za-z0-9]/.test(p)],
+];
 
 export default function RegisterPage() {
   return (
@@ -20,241 +28,144 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [planCode, setPlanCode] = useState(searchParams.get("plan") || "");
-  const [raisonSociale, setRaisonSociale] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const confirmRef = useRef<HTMLInputElement>(null);
 
-  async function submit(e: FormEvent) {
+  const passwordOk = RULES.every(([, test]) => test(password));
+
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
+    const form = new FormData(e.currentTarget);
+    const confirm = String(form.get("confirm_password"));
     setError("");
 
     if (!planCode) {
-      setError("Choisissez une formule d'abonnement.");
-      setLoading(false);
+      setError("Choisissez une formule d’abonnement pour continuer.");
+      return;
+    }
+    if (!passwordOk) {
+      setError("Le mot de passe ne respecte pas encore toutes les règles ci-dessus.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Les deux mots de passe ne correspondent pas. Saisissez-les à nouveau.");
+      confirmRef.current?.focus();
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
-      setLoading(false);
-      return;
-    }
-
+    setLoading(true);
     try {
       await register({
-        raison_sociale: raisonSociale,
-        email,
+        raison_sociale: String(form.get("raison_sociale")),
+        email: String(form.get("email")),
         password,
-        confirm_password: confirmPassword,
+        confirm_password: confirm,
         plan_code: planCode,
       });
-
       router.push("/register-success");
     } catch (error) {
-      setError(await apiErrorMessage(error, "Impossible de créer le compte. Veuillez réessayer."));
-    } finally {
+      setError(await apiErrorMessage(error, "Impossible de créer le compte. Réessayez dans un instant."));
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-secondary/60">
-      <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-5 py-10">
-
-        <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-soft lg:grid-cols-2">
-
-          <div className="hidden bg-primary p-12 text-white lg:block">
-            <Logo light />
-
-            <div className="mt-24">
-              <p className="text-sm font-bold uppercase tracking-wider text-white/70">
-                LedgerConvert
-              </p>
-
-              <h1 className="mt-4 text-4xl font-extrabold leading-tight">
-                Transformez vos relevés bancaires en fichiers Excel structurés.
-              </h1>
-
-              <p className="mt-5 leading-7 text-white/80">
-                Choisissez votre formule, créez votre compte et convertissez
-                vos relevés dès l&apos;activation de votre abonnement.
-              </p>
-            </div>
+    <AuthShell
+      title="Créer un compte"
+      subtitle="Choisissez votre formule et ouvrez votre espace en une minute."
+      aside={{
+        title: "Commencez maintenant, convertissez dès l’activation.",
+        text: "Votre espace est accessible immédiatement. Notre équipe active ensuite votre abonnement et vos crédits mensuels.",
+      }}
+    >
+      <form onSubmit={submit} className="mt-8 space-y-6">
+        <div>
+          <p className="text-sm font-semibold" aria-hidden="true">Formule</p>
+          <div className="mt-2">
+            <PlanSelector value={planCode} onChange={setPlanCode} />
           </div>
-
-          <div className="p-7 sm:p-12">
-
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary"
-            >
-              <ArrowLeft size={16} />
-              Retour
-            </Link>
-
-            <div className="mt-8">
-
-              <Logo />
-
-              <h2 className="mt-6 text-3xl font-extrabold text-slate-950">
-                Créer un compte
-              </h2>
-
-              <p className="mt-2 text-sm text-slate-500">
-                Créez votre espace LedgerConvert.
-              </p>
-
-              <form onSubmit={submit} className="mt-7 space-y-4">
-
-                <div>
-                  <span className="text-sm font-semibold">
-                    Formule d&apos;abonnement
-                  </span>
-                  <div className="mt-2">
-                    <PlanSelector value={planCode} onChange={setPlanCode} />
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500">
-                    Votre compte est accessible immédiatement. Les conversions sont disponibles
-                    dès l&apos;activation de votre abonnement par notre équipe.
-                  </p>
-                </div>
-
-                <label className="block">
-                  <span className="text-sm font-semibold">
-                    Raison sociale
-                  </span>
-
-                  <div className="mt-2 flex items-center rounded-xl border border-slate-300 px-3 focus-within:border-primary">
-                    <Building2 size={18} className="text-slate-400" />
-
-                    <input
-                      required
-                      type="text"
-                      value={raisonSociale}
-                      onChange={(e) => setRaisonSociale(e.target.value)}
-                      className="w-full border-0 bg-transparent px-3 py-3 outline-none"
-                      placeholder="Votre entreprise"
-                    />
-                  </div>
-                </label>
-
-                <label className="block">
-                  <span className="text-sm font-semibold">
-                    Email
-                  </span>
-
-                  <div className="mt-2 flex items-center rounded-xl border border-slate-300 px-3 focus-within:border-primary">
-                    <Mail size={18} className="text-slate-400" />
-
-                    <input
-                      required
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full border-0 bg-transparent px-3 py-3 outline-none"
-                      placeholder="vous@entreprise.com"
-                    />
-                  </div>
-                </label>
-
-                <label className="block">
-                  <span className="text-sm font-semibold">
-                    Mot de passe
-                  </span>
-
-                  <div className="mt-2 flex items-center rounded-xl border border-slate-300 px-3 focus-within:border-primary">
-                    <Lock size={18} className="text-slate-400" />
-
-                    <input
-                      required
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full border-0 bg-transparent px-3 py-3 outline-none"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </label>
-
-                <label className="block">
-                  <span className="text-sm font-semibold">
-                    Confirmer le mot de passe
-                  </span>
-
-                  <div className="mt-2 flex items-center rounded-xl border border-slate-300 px-3 focus-within:border-primary">
-                    <Lock size={18} className="text-slate-400" />
-
-                    <input
-                      required
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full border-0 bg-transparent px-3 py-3 outline-none"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </label>
-
-                <div className="rounded-xl bg-slate-50 p-4 text-xs leading-6">
-                    <p className="font-semibold text-slate-700">
-                        Le mot de passe doit contenir :
-                    </p>
-
-                    <p className={password.length >= 8 ? "text-emerald-600" : "text-slate-500"}>
-                        {password.length >= 8 ? "✓" : "✗"} Au moins 8 caractères
-                    </p>
-
-                    <p className={/[A-Z]/.test(password) ? "text-emerald-600" : "text-slate-500"}>
-                        {/[A-Z]/.test(password) ? "✓" : "✗"} Une lettre majuscule
-                    </p>
-
-                    <p className={/[a-z]/.test(password) ? "text-emerald-600" : "text-slate-500"}>
-                        {/[a-z]/.test(password) ? "✓" : "✗"} Une lettre minuscule
-                    </p>
-
-                    <p className={/[0-9]/.test(password) ? "text-emerald-600" : "text-slate-500"}>
-                        {/[0-9]/.test(password) ? "✓" : "✗"} Un chiffre
-                    </p>
-
-                    <p className={/[^A-Za-z0-9]/.test(password) ? "text-emerald-600" : "text-slate-500"}>
-                        {/[^A-Za-z0-9]/.test(password) ? "✓" : "✗"} Un caractère spécial (!, @, #, ...)
-                    </p>
-                </div>
-
-                {error && (
-                  <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  disabled={loading}
-                  className="w-full rounded-xl bg-primary py-3.5 font-bold text-white hover:bg-teal-700 disabled:opacity-60"
-                >
-                  {loading ? "Création..." : "Créer mon compte"}
-                </button>
-
-              </form>
-
-              <p className="mt-6 text-center text-sm text-slate-500">
-                Vous avez déjà un compte ?{" "}
-                <Link
-                  href="/login"
-                  className="font-bold text-primary hover:underline"
-                >
-                  Se connecter
-                </Link>
-              </p>
-
-            </div>
-          </div>
-
         </div>
-      </div>
-    </main>
+
+        <div>
+          <label htmlFor="raison_sociale" className="text-sm font-semibold">Raison sociale</label>
+          <div className="field">
+            <Building2 size={18} aria-hidden="true" className="shrink-0 text-subtle" />
+            <input id="raison_sociale" name="raison_sociale" required minLength={2} maxLength={255} autoComplete="organization" placeholder="Ex. Atlas Conseil SARL…" />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="email" className="text-sm font-semibold">Email professionnel</label>
+          <div className="field">
+            <Mail size={18} aria-hidden="true" className="shrink-0 text-subtle" />
+            <input id="email" name="email" type="email" required autoComplete="email" inputMode="email" spellCheck={false} placeholder="vous@entreprise.ma…" />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="password" className="text-sm font-semibold">Mot de passe</label>
+          <div className="field">
+            <Lock size={18} aria-hidden="true" className="shrink-0 text-subtle" />
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              aria-describedby="password-rules"
+              placeholder="Choisissez un mot de passe…"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+              className="-mr-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-subtle hover:bg-pill hover:text-ink"
+            >
+              {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+            </button>
+          </div>
+          <ul id="password-rules" className="mt-3 flex flex-wrap gap-1.5">
+            {RULES.map(([label, test]) => {
+              const ok = test(password);
+              return (
+                <li key={label} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ok ? "bg-primary-soft text-primary" : "bg-pill text-muted"}`}>
+                  {ok ? <Check size={12} strokeWidth={3} aria-hidden="true" /> : <X size={12} aria-hidden="true" />}
+                  <span>{label}</span>
+                  <span className="sr-only">{ok ? " : respecté" : " : manquant"}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div>
+          <label htmlFor="confirm_password" className="text-sm font-semibold">Confirmer le mot de passe</label>
+          <div className="field">
+            <Lock size={18} aria-hidden="true" className="shrink-0 text-subtle" />
+            <input ref={confirmRef} id="confirm_password" name="confirm_password" type={showPassword ? "text" : "password"} required autoComplete="new-password" placeholder="Saisissez-le à nouveau…" />
+          </div>
+        </div>
+
+        <FormError message={error} />
+
+        <button type="submit" disabled={loading} className="btn-dark h-12 w-full text-[15px]">
+          {loading ? <><Loader2 size={18} className="animate-spin" aria-hidden="true" /> Création du compte…</> : "Créer mon compte"}
+        </button>
+
+        <p className="text-center text-xs leading-5 text-muted">
+          Les conversions sont disponibles dès l’activation de votre abonnement par notre équipe.
+        </p>
+      </form>
+
+      <p className="mt-8 text-center text-sm text-muted">
+        Déjà inscrit ?{" "}
+        <Link href="/login" className="font-semibold text-primary hover:underline">Se connecter</Link>
+      </p>
+    </AuthShell>
   );
 }

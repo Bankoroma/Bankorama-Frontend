@@ -1,135 +1,166 @@
 import Link from "next/link";
-import { ArrowRight, Check, FileSpreadsheet, LockKeyhole, ShieldCheck, Zap } from "lucide-react";
+import {
+  ArrowRight, ArrowUpRight, Brain, Check, Clock3, Download, FileUp, Fingerprint,
+  LockKeyhole, ShieldCheck, Sparkles, Trash2, UserCheck,
+} from "lucide-react";
 import { MarketingHeader } from "@/components/MarketingHeader";
 import { Footer } from "@/components/Footer";
 import { PlansGrid } from "@/components/Plans";
+import { ConversionDemo } from "@/components/ConversionDemo";
 
+const STEPS = [
+  { n: "01", icon: FileUp, title: "Importez", text: "Déposez le relevé PDF de n’importe quelle banque, jusqu’à 10 Mo." },
+  { n: "02", icon: Brain, title: "Extraction", text: "L’IA lit chaque ligne : date de valeur, type, libellé, débit et crédit." },
+  { n: "03", icon: Download, title: "Exploitez", text: "Téléchargez un Excel propre, avec totaux, prêt pour votre logiciel comptable." },
+];
+
+const SECURITY = [
+  { icon: Trash2, title: "Fichiers éphémères", text: "Le PDF et l’Excel sont supprimés du serveur dès le téléchargement." },
+  { icon: UserCheck, title: "Comptes validés", text: "Chaque abonnement est activé manuellement par notre équipe." },
+  { icon: LockKeyhole, title: "Accès protégé", text: "Mots de passe hachés avec bcrypt, sessions signées et limitées dans le temps." },
+  { icon: Fingerprint, title: "Anti-intrusion", text: "Tentatives de connexion limitées pour bloquer les attaques par force brute." },
+];
 
 export default function Home() {
   return (
     <>
       <MarketingHeader />
-      <main>
-        <section className="relative overflow-hidden bg-secondary/60">
-          <div className="absolute inset-0 bg-grid opacity-60" />
-          <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 py-20 lg:grid-cols-2 lg:px-8 lg:py-28">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-bold text-primary shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-primary" /> Conversion bancaire intelligente
+      <main id="contenu">
+        {/* ---------- HERO ---------- */}
+        <section className="safe-x pt-8 md:pt-12">
+          <div className="mx-auto grid max-w-6xl gap-2.5 lg:grid-cols-12">
+            <div className="bento flex animate-rise flex-col justify-between p-8 md:p-12 lg:col-span-7">
+              <div>
+                <span className="pill"><Sparkles size={13} aria-hidden="true" className="text-primary" /> Conversion par IA</span>
+                <h1 className="mt-6 text-[2.6rem] font-bold leading-[1.05] tracking-tightest sm:text-6xl">
+                  Vos relevés bancaires,
+                  <span className="block text-primary">enfin exploitables.</span>
+                </h1>
+                <p className="mt-6 max-w-lg text-lg leading-8 text-muted">
+                  Transformez vos relevés PDF en fichiers Excel structurés en quelques secondes,
+                  sans aucune ressaisie.
+                </p>
               </div>
-              <h1 className="mt-6 text-5xl font-extrabold leading-tight tracking-tight text-slate-950 md:text-6xl">
-                Vos relevés bancaires.
-                <span className="block text-primary">Enfin exploitables.</span>
-              </h1>
-              <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
-                Transformez automatiquement vos relevés bancaires PDF en fichiers Excel
-                structurés, prêts à être utilisés dans vos logiciels de comptabilité.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link href="/register" className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-white shadow-lg shadow-primary/20 hover:bg-teal-700">
-                  Commencer maintenant <ArrowRight size={18} />
+              <div className="mt-10 flex flex-wrap items-center gap-3">
+                <Link href="/register" className="btn-dark h-12 px-6 text-[15px]">
+                  Commencer <ArrowRight size={17} aria-hidden="true" />
                 </Link>
-                <a href="#fonctionnement" className="rounded-xl border border-slate-300 bg-white px-6 py-3.5 font-semibold text-slate-700 hover:border-primary">
-                  Découvrir
-                </a>
-              </div>
-              <div className="mt-8 flex flex-wrap gap-6 text-sm text-slate-500">
-                <span className="flex items-center gap-2"><Check size={16} className="text-primary" /> Excel structuré</span>
-                <span className="flex items-center gap-2"><Check size={16} className="text-primary" /> Jusqu'à 10 Mo</span>
-                <span className="flex items-center gap-2"><Check size={16} className="text-primary" /> Gain de temps</span>
+                <a href="#tarifs" className="btn h-12 px-6 text-[15px] text-ink hover:bg-black/5">Voir les tarifs</a>
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white bg-white p-4 shadow-soft">
-              <div className="rounded-2xl bg-secondary/60 p-7">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary text-white"><FileSpreadsheet /></div>
-                  <div>
-                    <p className="font-bold text-slate-900">Relevé bancaire.pdf</p>
-                    <p className="text-xs text-slate-500">Prêt à être converti</p>
-                  </div>
-                </div>
-                <div className="my-8 h-2 overflow-hidden rounded-full bg-slate-200">
-                  <div className="h-full w-3/4 rounded-full bg-primary" />
-                </div>
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  {["Date", "Libellé", "Montant"].map((x) => (
-                    <div key={x} className="rounded-xl bg-white p-4 shadow-sm">
-                      <p className="text-xs text-slate-400">{x}</p>
-                      <p className="mt-1 font-bold text-slate-800">Structuré</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 rounded-xl bg-primary p-4 text-center font-semibold text-white">
-                  ✓ Fichier Excel prêt
-                </div>
-              </div>
+            {/* Démo animée PDF -> Excel */}
+            <div className="bento-dark animate-rise p-6 [animation-delay:80ms] md:p-8 lg:col-span-5">
+              <ConversionDemo />
             </div>
-          </div>
-        </section>
 
-        <section id="fonctionnement" className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="font-bold uppercase tracking-wider text-primary">Comment ça marche ?</p>
-            <h2 className="mt-3 text-4xl font-extrabold text-slate-950">Du PDF à Excel en quelques clics</h2>
-            <p className="mt-4 text-slate-600">LedgerConvert automatise le travail répétitif pour vous permettre de vous concentrer sur votre comptabilité.</p>
-          </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {/* Rangée de chiffres */}
             {[
-              ["01", "Importez", "Déposez votre relevé bancaire PDF dans votre espace."],
-              ["02", "Convertissez", "Notre moteur extrait et structure les transactions."],
-              ["03", "Exploitez", "Téléchargez votre Excel et utilisez-le dans votre logiciel comptable."],
-            ].map(([n, title, text]) => (
-              <div key={n} className="rounded-2xl border border-slate-200 p-7 shadow-sm">
-                <span className="text-4xl font-black text-primary/25">{n}</span>
-                <h3 className="mt-4 text-xl font-bold">{title}</h3>
-                <p className="mt-2 leading-7 text-slate-600">{text}</p>
+              ["1", "page = 1 crédit", "Vous ne payez que ce que vous convertissez."],
+              ["10 Mo", "par relevé", "Les relevés multi-pages passent sans souci."],
+              ["5", "colonnes normalisées", "Date, type, libellé, débit, crédit."],
+            ].map(([value, label, note], i) => (
+              <div key={label} className="bento animate-rise p-6 lg:col-span-4" style={{ animationDelay: `${160 + i * 60}ms` }}>
+                <p className="num text-5xl text-ink">{value}</p>
+                <p className="mt-2 font-semibold">{label}</p>
+                <p className="mt-1 text-sm text-muted">{note}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section id="abonnements" className="bg-secondary/55 px-5 py-20">
-          <div className="mx-auto max-w-7xl">
-            <div className="text-center">
-              <p className="font-bold uppercase tracking-wider text-primary">Abonnements</p>
-              <h2 className="mt-3 text-4xl font-extrabold text-slate-950">Choisissez la formule qui vous correspond</h2>
-              <p className="mt-4 text-slate-600">Des tarifs simples et transparents, adaptés à votre volume de relevés.</p>
+        {/* ---------- FONCTIONNEMENT ---------- */}
+        <section id="fonctionnement" className="safe-x pt-24">
+          <div className="mx-auto max-w-6xl">
+            <p className="eyebrow">Fonctionnement</p>
+            <h2 className="mt-3 max-w-2xl text-4xl font-bold tracking-tightest md:text-5xl">Du PDF à Excel en trois étapes.</h2>
+
+            <div className="mt-10 grid gap-2.5 md:grid-cols-3">
+              {STEPS.map(({ n, icon: Icon, title, text }) => (
+                <div key={n} className="bento flex flex-col p-7">
+                  <div className="flex items-center justify-between">
+                    <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary-soft text-primary"><Icon size={22} aria-hidden="true" /></span>
+                    <span className="num text-3xl text-line" aria-hidden="true">{n}</span>
+                  </div>
+                  <h3 className="mt-8 text-xl font-bold">{title}</h3>
+                  <p className="mt-2 leading-7 text-muted">{text}</p>
+                </div>
+              ))}
+
+              <div className="bento-dark flex flex-col justify-between gap-6 p-8 md:col-span-2">
+                <p className="font-display text-2xl font-semibold leading-snug tracking-tight md:text-3xl">
+                  « Fini la <em className="not-italic text-mint">ressaisie</em>. Place à l’<em className="not-italic text-mint">analyse</em>. »
+                </p>
+                <p className="text-sm text-white/60">Pensé pour les cabinets comptables, les TPE & PME et les directions financières.</p>
+              </div>
+
+              <div className="bento p-7" style={{ background: "linear-gradient(145deg, #0F766E 0%, #12806f 55%, #1D9486 100%)" }}>
+                <Clock3 size={22} aria-hidden="true" className="text-white/85" />
+                <p className="num mt-6 text-5xl text-white">Secondes</p>
+                <p className="mt-2 font-semibold text-white/90">au lieu d’heures de saisie manuelle</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- TARIFS ---------- */}
+        <section id="tarifs" className="safe-x pt-24">
+          <div className="mx-auto max-w-6xl">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div>
+                <p className="eyebrow">Tarifs</p>
+                <h2 className="mt-3 text-4xl font-bold tracking-tightest md:text-5xl">Une formule pour chaque volume.</h2>
+              </div>
+              <p className="max-w-sm text-muted">Prix TTC en dirhams. Vos crédits sont rechargés automatiquement chaque mois.</p>
             </div>
             <PlansGrid />
           </div>
         </section>
 
-        <section id="confiance" className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-            <div>
-              <p className="font-bold uppercase tracking-wider text-primary">Pourquoi nous faire confiance ?</p>
-              <h2 className="mt-3 text-4xl font-extrabold text-slate-950">Pensé pour les professionnels</h2>
-              <div className="mt-8 space-y-6">
-                {[
-                  [ShieldCheck, "Sécurité", "Vos documents sont traités dans un environnement conçu pour protéger vos données."],
-                  [Zap, "Rapidité", "Réduisez les saisies manuelles et récupérez rapidement un fichier exploitable."],
-                  [LockKeyhole, "Confidentialité", "Vos données restent dédiées à votre usage et à votre traitement."],
-                ].map(([Icon, title, text]) => {
-                  const I = Icon as typeof ShieldCheck;
-                  return <div key={title as string} className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-primary"><I size={21}/></div><div><h3 className="font-bold">{title as string}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{text as string}</p></div></div>
-                })}
+        {/* ---------- SÉCURITÉ ---------- */}
+        <section id="securite" className="safe-x pt-24">
+          <div className="mx-auto max-w-6xl">
+            <p className="eyebrow">Sécurité</p>
+            <h2 className="mt-3 max-w-2xl text-4xl font-bold tracking-tightest md:text-5xl">Vos données financières restent les vôtres.</h2>
+
+            <div className="mt-10 grid gap-2.5 md:grid-cols-2">
+              <div className="bento-dark flex flex-col justify-between p-8 md:row-span-2">
+                <ShieldCheck size={28} aria-hidden="true" className="text-mint" />
+                <div className="mt-16">
+                  <h3 className="text-3xl font-bold tracking-tight">Isolation au niveau de la base de données.</h3>
+                  <p className="mt-4 leading-7 text-white/70">
+                    Chaque compte n’accède qu’à ses propres données, contrôlé directement par PostgreSQL
+                    (Row Level Security), et pas seulement par l’application.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="rounded-3xl bg-neutral p-9 text-white">
-              <p className="text-sm font-bold uppercase tracking-wider text-tertiary">Ils nous font confiance</p>
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                {["Cabinets comptables", "TPE & PME", "Entrepreneurs", "Associations"].map((x) => (
-                  <div key={x} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <p className="font-semibold">{x}</p>
-                    <p className="mt-1 text-xs text-slate-400">Conversion simplifiée</p>
+              <div className="grid gap-2.5 sm:grid-cols-2 md:row-span-2">
+                {SECURITY.map(({ icon: Icon, title, text }) => (
+                  <div key={title} className="bento p-6">
+                    <span className="grid h-11 w-11 place-items-center rounded-2xl bg-pill text-ink"><Icon size={20} aria-hidden="true" /></span>
+                    <h3 className="mt-5 font-bold">{title}</h3>
+                    <p className="mt-1 text-sm leading-6 text-muted">{text}</p>
                   </div>
                 ))}
               </div>
-              <p className="mt-8 text-sm leading-6 text-slate-300">
-                Une solution pensée pour toutes les équipes qui manipulent régulièrement des relevés bancaires et veulent éviter les ressaisies.
-              </p>
             </div>
+          </div>
+        </section>
+
+        {/* ---------- CTA ---------- */}
+        <section className="safe-x py-24">
+          <div className="bento mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 p-8 md:flex-row md:items-center md:p-12">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tightest md:text-4xl">Prêt à gagner du temps ?</h2>
+              <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
+                {["Accès immédiat à votre espace", "Activation rapide", "Crédits rechargés chaque mois"].map((x) => (
+                  <li key={x} className="flex items-center gap-2"><Check size={16} aria-hidden="true" className="text-primary" /> {x}</li>
+                ))}
+              </ul>
+            </div>
+            <Link href="/register" className="btn-primary h-12 shrink-0 px-6 text-[15px]">
+              Créer mon compte <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
           </div>
         </section>
       </main>
